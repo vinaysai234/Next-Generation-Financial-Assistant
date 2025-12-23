@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Analytics | Smart Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .section-title {
+            color: #00b09b;
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .analytics-wrapper {
+            max-width: 950px;
+            margin: 30px auto;
+        }
+
+        .analytics-card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(0, 176, 155, 0.2);
+            margin-bottom: 25px;
+            transition: 0.3s ease-in-out;
+        }
+
+        .analytics-card:hover {
+            box-shadow: 0 0 25px rgba(0, 176, 155, 0.3);
+        }
+
+        .analytics-card h3 {
+            color: #00b09b;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 380px !important;
+        }
+
+        .summary p {
+            font-size: 16px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+    {% include 'sidebar.html' %}
+
+    <div class="main-content section">
+        <h2 class="section-title">📈 Analytics</h2>
+
+        <div class="analytics-wrapper">
+
+            <!-- Income vs Expense Chart -->
+            <div class="analytics-card">
+                <h3>Income vs Expense Trend</h3>
+                <canvas id="incomeExpenseChart" data-income="{{ income }}" data-expense="{{ expense }}"></canvas>
+            </div>
+
+            <!-- Category-wise Expense Chart -->
+            <div class="analytics-card">
+                <h3>Category-wise Expense Distribution</h3>
+                <canvas id="categoryChart"></canvas>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="analytics-card summary">
+                <h3>Summary</h3>
+                <p>💰 <b>Total Income:</b> ₹{{ income }}</p>
+                <p>💸 <b>Total Expense:</b> ₹{{ expense }}</p>
+                <p>💼 <b>Balance:</b> ₹{{ balance }}</p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const income = parseFloat(document.getElementById('incomeExpenseChart').dataset.income);
+        const expense = parseFloat(document.getElementById('incomeExpenseChart').dataset.expense);
+        const transactions = {{ transactions | tojson }};
+
+        // Income vs Expense Chart
+        new Chart(document.getElementById('incomeExpenseChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Income', 'Expense'],
+                datasets: [{
+                    label: 'Amount (₹)',
+                    data: [income, expense],
+                    backgroundColor: ['#00c853', '#d50000'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // Category-wise Expense Pie Chart
+        const categoryData = {};
+        transactions.forEach(t => {
+            if (t.type === 'expense') {
+                categoryData[t.category] = (categoryData[t.category] || 0) + t.amount;
+            }
+        });
+
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'pie',
+            data: {
+                labels: Object.keys(categoryData),
+                datasets: [{
+                    data: Object.values(categoryData),
+                    backgroundColor: [
+                        '#00c853', '#66bb6a', '#a5d6a7',
+                        '#1de9b6', '#00bfa5', '#64ffda'
+                    ]
+                }]
+            },
+            options: { responsive: true }
+        });
+    </script>
+
+</body>
+</html>

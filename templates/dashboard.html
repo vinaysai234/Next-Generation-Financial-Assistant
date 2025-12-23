@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - Next-Gen Financial Assistant</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* Quick styling */
+.quick-stats { display: flex; justify-content: space-around; margin-bottom: 30px; flex-wrap: wrap; gap:15px; }
+.quick-stats .card { flex:1 1 200px; background:#f0fff4; padding:20px; border-radius:12px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.1); transition:0.3s; }
+.quick-stats .card:hover { transform: translateY(-3px); }
+
+.charts-section { display:flex; flex-wrap:wrap; gap:30px; justify-content: space-around; margin-bottom:40px; }
+.chart-container { flex:1 1 400px; background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
+
+.recent-transactions table { width:100%; border-collapse:collapse; }
+.recent-transactions th, .recent-transactions td { padding:12px; text-align:center; border-bottom:1px solid #ddd; }
+.recent-transactions tr:hover { background:#f9fff9; }
+.delete-btn { color:#ff4d4d; text-decoration:none; transition:0.2s; }
+.delete-btn:hover { transform: scale(1.1); }
+
+.sidebar { width:220px; float:left; background:#00b09b; min-height:100vh; padding:20px; color:#fff; }
+.sidebar h2 { font-size:20px; margin-bottom:30px; }
+.sidebar-menu { list-style:none; padding:0; }
+.sidebar-menu li { margin:15px 0; }
+.sidebar-menu a { color:#fff; text-decoration:none; font-weight:500; }
+.sidebar-menu a.active { font-weight:700; text-decoration:underline; }
+
+.main-content { margin-left:240px; padding:20px; font-family:'Roboto',sans-serif; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; }
+footer { text-align:center; padding:20px 0; background:#f0f0f0; margin-top:50px; font-size:14px; color:#333; }
+
+@media(max-width:900px){
+    .charts-section, .quick-stats { flex-direction:column; }
+    .main-content { margin-left:0; }
+    .sidebar { width:100%; float:none; min-height:auto; padding:15px; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand"><h2>💰 Budget Tracker</h2></div>
+    <ul class="sidebar-menu">
+        <li><a href="{{ url_for('home') }}">Add Transaction</a></li>
+        <li><a href="{{ url_for('dashboard') }}" class="active">Dashboard</a></li>
+        <li><a href="{{ url_for('reports') }}">Reports</a></li>
+        <li><a href="{{ url_for('analytics') }}">Analytics</a></li>
+        <li><a href="{{ url_for('settings') }}">Settings</a></li>
+    </ul>
+</div>
+
+<div class="main-content">
+<header>
+    <h1>Dashboard</h1>
+    <div class="profile"><i>👤</i> <span>Welcome, User</span></div>
+</header>
+
+<main>
+<section class="quick-stats">
+    <div class="card"><h3>Total Income</h3><p id="total-income">₹{{ income }}</p></div>
+    <div class="card"><h3>Total Expense</h3><p id="total-expense">₹{{ expense }}</p></div>
+    <div class="card"><h3>Tax Calculated</h3><p id="total-tax">₹{{ tax }}</p></div>
+    <div class="card"><h3>Balance</h3><p id="balance">₹{{ balance }}</p></div>
+</section>
+
+<section class="charts-section">
+    <div class="chart-container">
+        <h2>Income vs Expense vs Tax</h2>
+        <canvas id="incomeChart" data-income="{{ income }}" data-expense="{{ expense }}" data-tax="{{ tax }}" width="400" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+        <h2>Category Breakdown</h2>
+        <canvas id="categoryChart" width="400" height="200"></canvas>
+    </div>
+</section>
+
+<section class="recent-transactions">
+    <h2>Recent Transactions</h2>
+    <table>
+        <thead>
+            <tr><th>ID</th><th>Type</th><th>Amount</th><th>Category</th><th>Date</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+            {% for t in transactions %}
+            <tr>
+                <td>{{ t.id }}</td>
+                <td>{{ t.type }}</td>
+                <td>₹{{ t.amount }}</td>
+                <td>{{ t.category }}</td>
+                <td>{{ t.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td><a href="{{ url_for('delete_transaction', tid=t.id) }}" class="delete-btn">🗑️ Delete</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+</main>
+
+<footer>
+<p>© 2025 Next-Gen Financial Assistant with AI & Predictive Analytics</p>
+</footer>
+
+<!-- JS -->
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Chart for Income, Expense, Tax
+const ctx = document.getElementById('incomeChart').getContext('2d');
+const income = parseFloat(ctx.canvas.dataset.income) || 0;
+const expense = parseFloat(ctx.canvas.dataset.expense) || 0;
+const tax = parseFloat(ctx.canvas.dataset.tax) || 0;
+
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Income', 'Expense', 'Tax'],
+        datasets: [{
+            label: 'Amount (₹)',
+            data: [income, expense, tax],
+            backgroundColor: [
+                'rgba(76, 175, 80, 0.7)',   // Green
+                'rgba(244, 67, 54, 0.7)',   // Red
+                'rgba(255, 193, 7, 0.7)'    // Yellow for tax
+            ],
+            borderColor: [
+                'rgba(76, 175, 80, 1)',
+                'rgba(244, 67, 54, 1)',
+                'rgba(255, 193, 7, 1)'
+            ],
+            borderWidth: 1,
+            borderRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+
+</body>
+</html>
